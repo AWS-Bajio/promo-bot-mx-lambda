@@ -89,7 +89,7 @@ Resources:
       CodeUri: delete-hot-promos/
       Handler: app.handler
       MemorySize: 128
-      Timeout: 5
+      Timeout: 40
       Role: !GetAtt LambdaExecutionPromoBotRole.Arn
       Environment:
         Variables:
@@ -110,6 +110,22 @@ Resources:
         - AttributeName: created_at
           AttributeType: 'N'
       TableName: promo_bot_mx_promos
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: created_at
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+  
+  ChannelTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: 'N'
+      TableName: promo_bot_mx_channel
       KeySchema:
         - AttributeName: id
           KeyType: HASH
