@@ -25,6 +25,41 @@ Globals:
     Runtime: nodejs12.x
 
 Resources:
+  LambdaExecutionPromoBotRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Description: Role to execute lambda functions of the promo-bot-mx
+      Policies:
+        - PolicyName: 'DynamoDBPromoBasicOperations'
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:GetItem
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt PromosTable.Arn
+        - PolicyName: LambdaPromoBasicOperations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+      RoleName: LambdaExecutionPromoBotRole
   GetHotPromos:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -32,7 +67,7 @@ Resources:
       Handler: app.handler
       MemorySize: 1024
       Timeout: 15
-      Role: arn:aws:iam::919590014828:role/LambdaExecutionDynamoDBRole
+      Role: !GetAtt LambdaExecutionPromoBotRole.Arn
       Environment:
         Variables:
           TELEGRAM_URL: !Ref TelegramURL
@@ -54,8 +89,8 @@ Resources:
       CodeUri: delete-hot-promos/
       Handler: app.handler
       MemorySize: 128
-      Timeout: 5
-      Role: arn:aws:iam::919590014828:role/LambdaExecutionDynamoDBRole
+      Timeout: 40
+      Role: !GetAtt LambdaExecutionPromoBotRole.Arn
       Environment:
         Variables:
           ENVIRONMENT: prod
@@ -81,7 +116,27 @@ Resources:
         - AttributeName: created_at
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
+  
+  ChannelTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: 'N'
+      TableName: promo_bot_mx_channel
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: created_at
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
 Outputs:
   GetHotPromos:
     Description: "Lambda to get and save new Hot Promos"
     Value: !GetAtt GetHotPromos.Arn
+  LambdaExecutionPromoBotRole:
+    Description: "Role for the lambda execution"
+    Value: !GetAtt LambdaExecutionPromoBotRole.Arn

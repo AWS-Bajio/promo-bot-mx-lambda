@@ -131,7 +131,7 @@ $RECYCLE.BIN/
 # SAM builds
 .aws-sam
 .aws-sam/*
-env.json
+env-local.json
 .idea
 .idea/*
 
